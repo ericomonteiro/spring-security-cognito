@@ -1,6 +1,6 @@
 package ericomonteiro.com.github.springsecuritycognito.rest.dto
 
-data class LoginDto(
-    val userName: String,
+data class LoginRequestDto(
+    val username: String,
     val password: String
 )
