@@ -3,10 +3,13 @@ package ericomonteiro.com.github.springsecuritycognito.service
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProvider
 import com.amazonaws.services.cognitoidp.model.AuthFlowType
 import com.amazonaws.services.cognitoidp.model.InitiateAuthRequest
+import ericomonteiro.com.github.springsecuritycognito.model.User
 import ericomonteiro.com.github.springsecuritycognito.rest.dto.LoginRequestDto
 import ericomonteiro.com.github.springsecuritycognito.rest.dto.LoginResponseDto
+import ericomonteiro.com.github.springsecuritycognito.rest.mapper.UserMapper
 import ericomonteiro.com.github.springsecuritycognito.rest.mapper.toLoginResponseDto
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.security.core.Authentication
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
 import java.util.Base64
@@ -16,13 +19,14 @@ import javax.crypto.spec.SecretKeySpec
 
 @Service
 class SecurityService(
-    @Value("\${aws.cognito.user-pool.client-id}")
+    @Value("\${aws.cognito.client-id}")
     private val userPoolClientId: String,
 
-    @Value("\${aws.cognito.user-pool.client-secret}")
+    @Value("\${aws.cognito.client-secret}")
     private val userPoolClientSecret: String,
 
-    private val cognitoClient: AWSCognitoIdentityProvider
+    private val cognitoClient: AWSCognitoIdentityProvider,
+    private val userMapper: UserMapper
 ) {
 
     fun login(loginRequestDto: LoginRequestDto): LoginResponseDto {
@@ -58,5 +62,7 @@ class SecurityService(
             throw RuntimeException("Error while calculating ")
         }
     }
+
+    fun user(authentication: Authentication): User = userMapper.fromAuthentication(authentication)
 
 }
