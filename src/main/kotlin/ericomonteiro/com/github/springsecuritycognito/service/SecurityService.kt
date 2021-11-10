@@ -3,6 +3,8 @@ package ericomonteiro.com.github.springsecuritycognito.service
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProvider
 import com.amazonaws.services.cognitoidp.model.AuthFlowType
 import com.amazonaws.services.cognitoidp.model.InitiateAuthRequest
+import com.amazonaws.services.cognitoidp.model.ListUsersRequest
+import com.amazonaws.services.cognitoidp.model.ListUsersResult
 import ericomonteiro.com.github.springsecuritycognito.model.User
 import ericomonteiro.com.github.springsecuritycognito.rest.dto.LoginRequestDto
 import ericomonteiro.com.github.springsecuritycognito.rest.dto.LoginResponseDto
@@ -25,6 +27,10 @@ class SecurityService(
     @Value("\${aws.cognito.client-secret}")
     private val userPoolClientSecret: String,
 
+
+    @Value("\${aws.cognito.pool-id}")
+    private val userPoolId: String,
+
     private val cognitoClient: AWSCognitoIdentityProvider,
     private val userMapper: UserMapper
 ) {
@@ -44,6 +50,13 @@ class SecurityService(
             "PASSWORD" to loginRequestDto.password,
             "SECRET_HASH" to calculateSecretHash(loginRequestDto.username)
         ))
+
+    fun listUsers(): List<User> =
+        userMapper.fromCognitoUserList(
+            cognitoClient.listUsers(
+                ListUsersRequest().withUserPoolId(userPoolId)
+            ).users
+        )
 
 
     private fun calculateSecretHash(userName: String): String? {
