@@ -5,6 +5,7 @@ import com.amazonaws.services.cognitoidp.model.*
 import ericomonteiro.com.github.springsecuritycognito.model.User
 import ericomonteiro.com.github.springsecuritycognito.rest.dto.LoginRequestDto
 import ericomonteiro.com.github.springsecuritycognito.rest.dto.LoginResponseDto
+import ericomonteiro.com.github.springsecuritycognito.rest.dto.SignUpDto
 import ericomonteiro.com.github.springsecuritycognito.rest.mapper.UserMapper
 import ericomonteiro.com.github.springsecuritycognito.rest.mapper.toLoginResponseDto
 import org.springframework.beans.factory.annotation.Value
@@ -28,6 +29,9 @@ class SecurityService(
 
     @Value("\${aws.cognito.pool-id}")
     private val userPoolId: String,
+
+    @Value("\${aws.cognito.sign-up.group-name}")
+    private val defaultSignUpGroupName: String,
 
     private val cognitoClient: AWSCognitoIdentityProvider,
     private val userMapper: UserMapper
@@ -53,6 +57,31 @@ class SecurityService(
                 .withAccessToken(authentication.token.tokenValue)
         )
         return userMapper.fromCognitoUserResult(result)
+    }
+
+    fun createUser(user: SignUpDto): SignUpResult {
+        val result = cognitoClient.signUp(
+            SignUpRequest()
+                .withClientId(userPoolClientId)
+                .withSecretHash(calculateSecretHash(user.username))
+                .withUsername(user.username)
+                .withPassword(user.password)
+                .withUserAttributes(
+                    listOf(
+                        AttributeType().withName("email").withValue(user.email),
+                        AttributeType().withName("phone_number").withValue(user.phone)
+                    )
+                )
+        )
+
+        cognitoClient.adminAddUserToGroup(
+            AdminAddUserToGroupRequest()
+                .withUserPoolId(userPoolId)
+                .withGroupName(defaultSignUpGroupName)
+                .withUsername(user.username)
+        )
+
+        return result
     }
 
     private fun initiateAuthRequest(loginRequestDto: LoginRequestDto) = InitiateAuthRequest()
