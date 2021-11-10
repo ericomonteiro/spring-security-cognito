@@ -1,10 +1,7 @@
 package ericomonteiro.com.github.springsecuritycognito.service
 
 import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProvider
-import com.amazonaws.services.cognitoidp.model.AuthFlowType
-import com.amazonaws.services.cognitoidp.model.InitiateAuthRequest
-import com.amazonaws.services.cognitoidp.model.ListUsersRequest
-import com.amazonaws.services.cognitoidp.model.ListUsersResult
+import com.amazonaws.services.cognitoidp.model.*
 import ericomonteiro.com.github.springsecuritycognito.model.User
 import ericomonteiro.com.github.springsecuritycognito.rest.dto.LoginRequestDto
 import ericomonteiro.com.github.springsecuritycognito.rest.dto.LoginResponseDto
@@ -12,6 +9,7 @@ import ericomonteiro.com.github.springsecuritycognito.rest.mapper.UserMapper
 import ericomonteiro.com.github.springsecuritycognito.rest.mapper.toLoginResponseDto
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.Authentication
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
 import java.util.Base64
@@ -42,6 +40,21 @@ class SecurityService(
         return result.authenticationResult.toLoginResponseDto()
     }
 
+    fun listUsers(): List<User> =
+        userMapper.fromCognitoUserList(
+            cognitoClient.listUsers(
+                ListUsersRequest().withUserPoolId(userPoolId)
+            ).users
+        )
+
+    fun userAuthenticated(authentication: JwtAuthenticationToken): User {
+        val result = cognitoClient.getUser(
+            GetUserRequest()
+                .withAccessToken(authentication.token.tokenValue)
+        )
+        return userMapper.fromCognitoUserResult(result)
+    }
+
     private fun initiateAuthRequest(loginRequestDto: LoginRequestDto) = InitiateAuthRequest()
         .withClientId(userPoolClientId)
         .withAuthFlow(AuthFlowType.USER_PASSWORD_AUTH)
@@ -50,14 +63,6 @@ class SecurityService(
             "PASSWORD" to loginRequestDto.password,
             "SECRET_HASH" to calculateSecretHash(loginRequestDto.username)
         ))
-
-    fun listUsers(): List<User> =
-        userMapper.fromCognitoUserList(
-            cognitoClient.listUsers(
-                ListUsersRequest().withUserPoolId(userPoolId)
-            ).users
-        )
-
 
     private fun calculateSecretHash(userName: String): String? {
         val HMAC_SHA256_ALGORITHM = "HmacSHA256"
@@ -75,7 +80,5 @@ class SecurityService(
             throw RuntimeException("Error while calculating ")
         }
     }
-
-    fun user(authentication: Authentication): User = userMapper.fromAuthentication(authentication)
 
 }

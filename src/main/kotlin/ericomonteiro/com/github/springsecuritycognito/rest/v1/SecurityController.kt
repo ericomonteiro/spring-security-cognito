@@ -1,12 +1,12 @@
 package ericomonteiro.com.github.springsecuritycognito.rest.v1
 
-import com.amazonaws.services.cognitoidp.model.ListUsersResult
 import ericomonteiro.com.github.springsecuritycognito.model.User
 import ericomonteiro.com.github.springsecuritycognito.rest.dto.LoginRequestDto
 import ericomonteiro.com.github.springsecuritycognito.rest.dto.LoginResponseDto
 import ericomonteiro.com.github.springsecuritycognito.service.SecurityService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.web.bind.annotation.*
 
 
@@ -29,7 +29,7 @@ class SecurityController(
 
     @GetMapping("/user/authenticated")
     fun user(): ResponseEntity<User> {
-        return ResponseEntity.ok(securityService.user(SecurityContextHolder.getContext().authentication))
+        return ResponseEntity.ok(securityService.userAuthenticated(SecurityContextHolder.getContext().authentication as JwtAuthenticationToken))
     }
 
 }
